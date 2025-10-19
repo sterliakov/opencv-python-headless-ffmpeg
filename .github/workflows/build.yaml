@@ -1,0 +1,60 @@
+name: Create a release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-opencv:
+    name: build opencv-python-headless
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.11'
+
+      - name: get ffmpeg
+        run: |
+          wget -qO ffmpeg.tar.xz https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.1-latest-linux64-gpl-shared-7.1.tar.xz
+          mkdir ffmpeg
+          tar xf ffmpeg.tar.xz -C ffmpeg --strip-components 1
+
+      - name: install deps
+        run: |
+          apt-get -qq -o=Dpkg::Use-Pty=0 update \
+          && apt-get -qq -o=Dpkg::Use-Pty=0 install -y --no-install-recommends \
+              build-essential pkg-config \
+              libavformat-dev libavcodec-dev libswscale-dev \
+              libblas-dev liblapack-dev
+      - name: build from sdist
+        run: |
+          pname=opencv-python-headless
+          uv pip download "$pname" --no-binary "$pname"
+          mkdir "$pname"
+          tar xzf "$pname"*.tar.gz -C "$pname" --strip-components 1
+          cd "$pname"
+          uv venv --python 3.11
+          . .venv/bin/activate
+          uv pip install setuptools numpy scikit-build
+          export CMAKE_ARGS="-DWITH_FFMPEG=ON \
+            -DBUILD_OPENCV_highgui=OFF \
+            -DWITH_GTK=OFF \
+            -DBUILD_JAVA=OFF \
+            -DBUILD_TESTS=OFF \
+            -DBUILD_PERF_TESTS=OFF \
+            -DBUILD_EXAMPLES=OFF \
+            -DBUILD_opencv_apps=OFF \
+            -DBUILD_LIST=core,python3"
+          uv build --wheel --no-build-isolation
+
+      - name: push a release
+        run: |
+          tag="auto-$(date +'%Y-%m-%d-%H-%M')"
+          gh release create "$tag" --target master --latest --title "$tag" ffmpeg.tar.xz opencv-python-headless/dist/*.whl
