@@ -2,6 +2,24 @@ name: Create a release
 
 on:
   workflow_dispatch:
+    inputs:
+      package_version:
+        type: string
+        description: opencv-python-headless version to build
+        default: 4.12.0.88
+        required: true
+
+      python_version:
+        type: string
+        description: python version
+        default: '3.11'
+        required: true
+
+      ffmpeg_version:
+        type: string
+        description: ffmpeg version
+        default: '7.1'
+        required: true
 
 permissions:
   contents: read
@@ -18,13 +36,15 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@v6
         with:
-          python-version: '3.11'
+          python-version: ${{ inputs.python_version }}
 
       - name: get ffmpeg
         run: |
-          wget -qO ffmpeg.tar.xz https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n7.1-latest-linux64-gpl-shared-7.1.tar.xz
+          wget -qO ffmpeg.tar.xz "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n${version}-latest-linux64-gpl-shared-${version}.tar.xz"
           mkdir ffmpeg
           tar xf ffmpeg.tar.xz -C ffmpeg --strip-components 1
+        env:
+          version: ${{ inputs.ffmpeg_version }}
 
       - name: install deps
         run: |
@@ -36,11 +56,11 @@ jobs:
       - name: build from sdist
         run: |
           pname=opencv-python-headless
-          uv pip download "$pname" --no-binary "$pname"
+          uv pip download "$pname==$version" --no-binary "$pname"
           mkdir "$pname"
           tar xzf "$pname"*.tar.gz -C "$pname" --strip-components 1
           cd "$pname"
-          uv venv --python 3.11
+          uv venv --python "$pyversion"
           . .venv/bin/activate
           uv pip install setuptools numpy scikit-build
           export CMAKE_ARGS="-DWITH_FFMPEG=ON \
@@ -50,9 +70,11 @@ jobs:
             -DBUILD_TESTS=OFF \
             -DBUILD_PERF_TESTS=OFF \
             -DBUILD_EXAMPLES=OFF \
-            -DBUILD_opencv_apps=OFF \
-            -DBUILD_LIST=core,python3"
+            -DBUILD_opencv_apps=OFF"
           uv build --wheel --no-build-isolation
+        env:
+          version: ${{ inputs.package_version }}
+          pyversion: ${{ inputs.python_version }}
 
       - name: push a release
         run: |
