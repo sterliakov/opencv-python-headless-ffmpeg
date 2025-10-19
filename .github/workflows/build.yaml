@@ -43,6 +43,9 @@ jobs:
           wget -qO ffmpeg.tar.xz "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n${version}-latest-linux64-gpl-shared-${version}.tar.xz"
           mkdir ffmpeg
           tar xf ffmpeg.tar.xz -C ffmpeg --strip-components 1
+          sudo cp -r ffmpeg/lib/* /usr/lib/
+          sudo cp -r ffmpeg/include/* /usr/include/
+          sudo cp -r ffmpeg/bin/* /usr/bin/
         env:
           version: ${{ inputs.ffmpeg_version }}
 
@@ -50,9 +53,7 @@ jobs:
         run: |
           sudo apt-get -qq -o=Dpkg::Use-Pty=0 update \
           && sudo apt-get -qq -o=Dpkg::Use-Pty=0 install -y --no-install-recommends \
-              build-essential pkg-config \
-              libavformat-dev libavcodec-dev libswscale-dev \
-              libblas-dev liblapack-dev
+              build-essential pkg-config
       - name: build from sdist
         run: |
           pname=opencv-python-headless
