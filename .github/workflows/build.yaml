@@ -56,12 +56,16 @@ jobs:
       - name: build from sdist
         run: |
           pname=opencv-python-headless
-          uv pip download "$pname==$version" --no-binary "$pname"
-          mkdir "$pname"
-          tar xzf "$pname"*.tar.gz -C "$pname" --strip-components 1
-          cd "$pname"
+
           uv venv --python "$pyversion"
           . .venv/bin/activate
+          uv pip install pip
+          pip download "$pname==$version" --no-binary "$pname"
+
+          mkdir "$pname"
+          tar xzf "$pname"*.tar.gz -C "$pname" --strip-components 1
+
+          cd "$pname"
           uv pip install setuptools numpy scikit-build
           export CMAKE_ARGS="-DWITH_FFMPEG=ON \
             -DBUILD_OPENCV_highgui=OFF \
