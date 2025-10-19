@@ -84,3 +84,5 @@ jobs:
         run: |
           tag="auto-$(date +'%Y-%m-%d-%H-%M')"
           gh release create "$tag" --target master --latest --title "$tag" ffmpeg.tar.xz opencv-python-headless/dist/*.whl
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
