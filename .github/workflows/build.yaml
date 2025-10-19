@@ -48,8 +48,8 @@ jobs:
 
       - name: install deps
         run: |
-          apt-get -qq -o=Dpkg::Use-Pty=0 update \
-          && apt-get -qq -o=Dpkg::Use-Pty=0 install -y --no-install-recommends \
+          sudo apt-get -qq -o=Dpkg::Use-Pty=0 update \
+          && sudo apt-get -qq -o=Dpkg::Use-Pty=0 install -y --no-install-recommends \
               build-essential pkg-config \
               libavformat-dev libavcodec-dev libswscale-dev \
               libblas-dev liblapack-dev
